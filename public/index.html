@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Frontend</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-900 min-h-screen flex flex-col justify-center items-center text-white ">
+    <h1 id="mtitle"class="text-3xl font-bold mb-8">Bolt LM ⚡</h1>
+    <form id="chatForm" class="flex flex-col items-center bg-gray-800 rounded-lg p-6">
+        <label for="prompt" class="mb-2 font-semibold">Enter your message:</label>
+        <input type="text" id="prompt" name="prompt" required
+            class="border border-purple-500 shadow-inner shadow-purple-500  rounded px-4 py-2 w-64 mb-4 bg-gray-700 text-white">
+        <button type="submit"
+            class="bg-purple-500 hover:bg-purple-700 transition-all text-white font-bold py-2 px-4 rounded">Generate</button>
+    </form>
+    <div id="response" class="mt-8 text-center max-w-5xl text-semibold p-2 bg-gray-800 shadow-2xl rounded-lg"></div>
+
+    <script>
+        document.getElementById('chatForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            try {
+                const responseContainer = document.getElementById('response');
+                responseContainer.innerText = 'Generating... ✨';
+
+                const response = await fetch('/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: "NousResearch/Hermes-2-Pro-Mistral-7B-GGUF/Hermes-2-Pro-Mistral-7B.Q4_0.gguf",
+                        messages: [{ role: "user", content: formData.get('prompt') }],
+                        temperature: 0.4,
+                        max_tokens: 2000,
+                    }),
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let partialResponse = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+
+                    if (done) {
+                        break;
+                    }
+
+                    // Decode the chunk and append it to partialResponse
+                    partialResponse += decoder.decode(value, { stream: true });
+                }
+
+                // Display the complete response
+                responseContainer.innerText = partialResponse
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+
+</html>
